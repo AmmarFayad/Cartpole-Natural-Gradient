@@ -1,2 +1,2 @@
-# Cartpole-Natural-Gradient
-Implementation of natural gradient descent in Cartpole gym environment 
+# Natural Gradient Descent in Cartpole 
+Implementation of [natural gradient](https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.81.5461) descent in Cartpole gym environment. 
