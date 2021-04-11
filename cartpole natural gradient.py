@@ -88,19 +88,19 @@ def get_grad_logp_action(theta, ob, action):
 
 def get_action(theta, ob, rng=np.random):
     """
-    :param theta: A matrix of size |A| * (|S|+1)
-    :param ob: A vector of size |S|
-    :return: An integer
+    theta: A matrix of size |A| * (|S|+1)
+    ob: A vector of size |S|
+    return: An integer
     """
     return weighted_sample(compute_logits(theta, ob), rng=rng)
 def compute_fisher_matrix(theta, get_grad_logp_action, all_observations, all_actions):
     """
-    :param theta: A matrix of size |A| * (|S|+1)
-    :param get_grad_logp_action: A function, mapping from (theta, ob, action) to the gradient (a matrix 
+    theta: A matrix of size |A| * (|S|+1)
+    get_grad_logp_action: A function, mapping from (theta, ob, action) to the gradient (a matrix 
     of size |A| * (|S|+1) )
-    :param all_observations: A list of vectors of size |S|
-    :param all_actions: A list of vectors of size |A|
-    :return: A matrix of size (|A|*(|S|+1)) * (|A|*(|S|+1)), i.e. #columns and #rows are the number of 
+    all_observations: A list of vectors of size |S|
+    all_actions: A list of vectors of size |A|
+    return: A matrix of size (|A|*(|S|+1)) * (|A|*(|S|+1)), i.e. #columns and #rows are the number of 
     entries in theta
     """
     d = len(theta.flatten()) 
@@ -113,8 +113,9 @@ def compute_fisher_matrix(theta, get_grad_logp_action, all_observations, all_act
 
 def compute_natural_gradient(F, grad, reg=1e-4):
     F_inv = np.linalg.inv(F + reg * np.eye(F.shape[0]))
-    natural_grad = F_inv.dot(grad.flatten())
+    natural_grad = F_inv.dot(grad.flatten()) # ∇^{~}J= F^(-1) . ∇ J
     return np.reshape(natural_grad, grad.shape)
+#Adaptive Step Size
 def compute_step_size(F, natural_grad, natural_step_size):
     g_nat = natural_grad.flatten()
     #if g_nat.T.dot(F.dot(g_nat)) != np.zeros(g_nat.T.dot(F.dot(g_nat)).shape):
@@ -164,16 +165,16 @@ for itr in range(n_itrs):
             for t in reversed(range(len(observations))):
                 def compute_update(discount, R_tplus1, theta, s_t, a_t, r_t, b_t, get_grad_logp_action):
                     """
-                    :param discount: A scalar
-                    :param R_tplus1: A scalar
-                    :param theta: A matrix of size |A| * (|S|+1)
-                    :param s_t: A vector of size |S|
-                    :param a_t: Either a vector of size |A| or an integer, depending on the environment
-                    :param r_t: A scalar
-                    :param b_t: A scalar
-                    :param get_grad_logp_action: A function, mapping from (theta, ob, action) to the gradient (a 
+                    discount: A scalar
+                    R_tplus1: A scalar
+                    theta: A matrix of size |A| * (|S|+1)
+                    s_t: A vector of size |S|
+                    a_t: Either a vector of size |A| or an integer, depending on the environment
+                    r_t: A scalar
+                    b_t: A scalar
+                    get_grad_logp_action: A function, mapping from (theta, ob, action) to the gradient (a 
                     matrix of size |A| * (|S|+1) )
-                    :return: A tuple, consisting of a scalar and a matrix of size |A| * (|S|+1)
+                    return: A tuple, consisting of a scalar and a matrix of size |A| * (|S|+1)
                     """
                     R_t = (discount * R_tplus1) + r_t
                     pg_theta = get_grad_logp_action(theta, s_t, a_t) * (R_t -b_t)
@@ -201,9 +202,9 @@ for itr in range(n_itrs):
 
         def compute_baselines(all_returns):
             """
-            :param all_returns: A list of size T, where the t-th entry is a list of numbers, denoting the returns 
+            all_returns: A list of size T, where the t-th entry is a list of numbers, denoting the returns 
             collected at time step t across different episodes
-            :return: A vector of size T
+            return: A vector of size T
             """
             baselines = np.zeros(len(all_returns))
             for t in range(len(all_returns)):
@@ -220,15 +221,17 @@ for itr in range(n_itrs):
 
         # Roughly normalize the gradient
         grad = grad / (np.linalg.norm(grad) + 1e-8)
+        #Compute Fisher matrix
         F = compute_fisher_matrix(theta=theta, get_grad_logp_action=get_grad_logp_action,
                                       all_observations=all_observations, all_actions=all_actions)
         natural_grad = compute_natural_gradient(F, grad)
         #step_size = 0.1*compute_step_size(F, natural_grad, natural_step_size)
+        #Update step
         theta += 0.001  * natural_grad
         logits = compute_logits(theta, np.array(all_observations))
         ent = np.mean(compute_entropy(logits))
         perp = np.exp(ent)
 
         print((itr, np.mean(episode_rewards), ent, perp, np.linalg.norm(theta)))
-'''if __name__ == "__main__":
-    main()'''
+if __name__ == "__main__":
+    pass
